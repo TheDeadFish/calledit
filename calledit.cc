@@ -5,18 +5,21 @@ const char progName[] = "call edit";
 
 char* clipBoad_GetText(void);
 void clipBoad_SetText(const char* str);
+void EnableDlgItems2(HWND hwnd, int first, int count, BOOL bEnable);
+u32 dlgChk_getBits(HWND hwnd, int first, int count);
+void dlgChk_setBits(HWND hwnd, int first, int count, u32 bits);
 
 
 
 
 #define MAX_ARG 6
-#define MAX_REG 4
+#define MAX_REG 7
 #define SPOIL_MASK_STD 7
 #define SPOIL_MASM_WATC 1
 
 enum {
 	// x86 register numbers
-	REG_EAX, REG_EDX, REG_ECX, REG_EBX,
+	REG_EAX, REG_EDX, REG_ECX, REG_EBX
 };
 
 enum {
@@ -25,10 +28,8 @@ enum {
 	CALL_TYPE_WATCOM
 };
 
-
-
-
-static cch* const regName[] = { "eax", "edx", "ecx", "ebx" };
+static cch* const regName[] = { "eax", "edx", "ecx", "ebx",
+	 "esi", "edi", "ebp" };
 	
 struct CallSpec {
 	cch* type; u32 spoils;
@@ -92,31 +93,39 @@ struct CallInfo {
 		ArgInfo* ai = (&fn)+(index/2);
 		return index&1 ? ai->name : ai->type; }
 		
-	void fmt(bstr& str, const CallSpec* spec);
+	void fmt(bstr& str, const CallSpec* spec, u32 spoils);
+	u32 spoils(const CallSpec* spec);
 };
 
 void fmt_spoils(bstr& str, u32 spoils)
 {
 	if(spoils == SPOIL_MASK_STD) return;
+	
 	str.strcat("__spoils<");
+	cch* fmt = ", %s"+2;
 	for(int i = 0; i < MAX_REG; i++) {
-		if(_BTST(spoils, i)) { 
-			str.fmtcat("%s, ", regName[i]); }}
-	str[str.slen-2] = '>';
+		if(_BTST(spoils, i)) {
+			str.fmtcat(fmt, regName[i]); 
+			fmt = ", %s"; }}
+	str.strcat(">");
 }
 
-void CallInfo::fmt(bstr& str, const CallSpec* spec)
+u32 CallInfo::spoils(const CallSpec* spec)
 {
-	// set arg and name
-	cch* type = fn.type; if(!*type) type = "void";
-	str.fmtcat("%s _%s ", type, spec->type);
-	
-	// get spoils mask
 	u32 spoils = spec->spoils;
 	for(int i = 0; i < 4; i++) {
 		if(!args[i].chk()) break;
 		char reg = spec->get(i);
 		if(reg >= 0) spoils |= 1<<reg; }
+	return spoils;
+}
+
+void CallInfo::fmt(bstr& str, 
+	const CallSpec* spec, u32 spoils)
+{
+	// set arg and name
+	cch* type = fn.type; if(!*type) type = "void";
+	str.fmtcat("%s _%s ", type, spec->type);
 	fmt_spoils(str, spoils);
 	
 	// function name
@@ -168,15 +177,6 @@ CallInfo ci;
 static cch* const callName[] = { "cdecl", "stdcall", 
 	"fastcall", "thiscall", "watcom"};
 
-void mainDlgInit(HWND hwnd)
-{
-	dlgCombo_addStrs(hwnd, IDC_CONVEN, callName, 5);
-	dlgCombo_setSel(hwnd, IDC_CONVEN, 0);
-	
-
-
-}
-
 bool in_edt_update;
 
 void format_call(HWND hwnd)
@@ -187,8 +187,25 @@ void format_call(HWND hwnd)
 	
 	int iSpec = dlgCombo_getSel(hwnd, IDC_CONVEN);
 	auto* spec = callSpec+iSpec;
-	Bstr str; ci.fmt(str, spec);
+	
+	// get spoils state
+	u32 spoils;
+	if(IsDlgButtonChecked(hwnd, IDC_SPOIL)) {
+		spoils = dlgChk_getBits(hwnd, IDC_SPOIL_EAX, MAX_REG);
+	} else {
+		spoils = ci.spoils(spec);
+		dlgChk_setBits(hwnd, IDC_SPOIL_EAX, MAX_REG, spoils);
+	}
+	
+	Bstr str; ci.fmt(str, spec, spoils);
 	SetDlgItemTextA(hwnd, IDC_CALLEDT, str.data);
+}
+
+void mainDlgInit(HWND hwnd)
+{
+	dlgCombo_addStrs(hwnd, IDC_CONVEN, callName, 5);
+	dlgCombo_setSel(hwnd, IDC_CONVEN, 0);
+	format_call(hwnd);
 }
 
 void edt_update(HWND hwnd, int ctrlId)
@@ -272,12 +289,19 @@ void clipPaste(HWND hwnd)
 	SetDlgItemTextA(hwnd, IDC_CALLEDT, str);
 }
 
+void spoilChg(HWND hwnd)
+{
+	EnableDlgItems2(hwnd, IDC_SPOIL_EAX, MAX_REG,
+		IsDlgButtonChecked(hwnd, IDC_SPOIL));
+	format_call(hwnd);
+}
 
 BOOL CALLBACK mainDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	DLGMSG_SWITCH(
 		ON_MESSAGE(WM_INITDIALOG, mainDlgInit(hwnd))	
 	  CASE_COMMAND(
+		  ON_COMMAND(IDC_SPOIL, spoilChg(hwnd))
 	    ON_COMMAND(IDC_COPY, clipCopy(hwnd))
 	    ON_COMMAND(IDC_PASTE, clipPaste(hwnd))
 	    ON_COMMAND(IDCANCEL, EndDialog(hwnd, 0))
@@ -286,6 +310,8 @@ BOOL CALLBACK mainDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			ON_CONTROL(EN_CHANGE, IDC_CALLEDT, parse_edit(hwnd))
 			ON_CONTROL_RANGE(EN_CHANGE, IDC_EDIT1, IDC_EDIT14,
 				edt_update(hwnd, LOWORD(wParam)))
+			ON_CONTROL_RANGE(0, IDC_SPOIL_EAX, IDC_SPOIL_EBP, 
+				format_call(hwnd));
 		,)
 	,)
 }

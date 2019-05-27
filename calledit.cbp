@@ -38,6 +38,7 @@
 		<Unit filename="resource.rc">
 			<Option compilerVar="WINDRES" />
 		</Unit>
+		<Unit filename="stuff.cc" />
 		<Extensions>
 			<code_completion />
 			<envvars />

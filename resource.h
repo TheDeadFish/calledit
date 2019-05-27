@@ -20,6 +20,7 @@
 #define IDC_SPOIL_EBX                           1036
 #define IDC_SPOIL_ESI                           1037
 #define IDC_SPOIL_EDI                           1038
+#define IDC_SPOIL_EBP                           1039
 #define IDC_EDIT1                               1100
 #define IDC_EDIT2                               1101
 #define IDC_EDIT3                               1102
