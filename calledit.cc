@@ -12,7 +12,7 @@ void dlgChk_setBits(HWND hwnd, int first, int count, u32 bits);
 
 
 
-#define MAX_ARG 6
+#define MAX_ARG 10
 #define MAX_REG 7
 #define SPOIL_MASK_STD 7
 #define SPOIL_MASM_WATC 1
@@ -240,10 +240,10 @@ void parse_edit(HWND hwnd)
 	in_edt_update = true;
 	SCOPE_EXIT(in_edt_update = false);
 	
-	for(int i = IDC_EDIT1; i <= IDC_EDIT14; i++) {
+	for(int i = IDC_EDIT1; i <= IDC_EDIT22; i++) {
 		SetDlgItemTextA(hwnd, i, ""); }
 	char buff[1024];
-	GetDlgItemTextA(hwnd, IDC_CALLEDT, buff, 128);
+	GetDlgItemTextA(hwnd, IDC_CALLEDT, buff, 1024);
 	remove_space(buff);
 
 	// get the name
@@ -278,14 +278,29 @@ void clipCopy(HWND hwnd)
 {
 	format_call(hwnd);
 	char buff[1024];
-	GetDlgItemTextA(hwnd, IDC_CALLEDT, buff, 128);
+	GetDlgItemTextA(hwnd, IDC_CALLEDT, buff, 1024);
 	remove_space(buff);
 	clipBoad_SetText(buff);
+}
+
+void collapse_whitespace(char* str)
+{
+	unsigned char ch, ch0 = 0;
+	char* dst = str;
+	while(1) { 
+		ch = *str++; 
+		if(ch == 0) break;
+		if(ch < ' ') { ch = ' ';
+			if(ch0 == ' ') continue; }
+		*dst++ = ch0 = ch; 
+	}
+	*dst = ch;
 }
 
 void clipPaste(HWND hwnd)
 {
 	xstr str = clipBoad_GetText();
+	collapse_whitespace(str);
 	SetDlgItemTextA(hwnd, IDC_CALLEDT, str);
 }
 
@@ -308,7 +323,7 @@ BOOL CALLBACK mainDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			ON_COMMAND(IDC_GENERATE, format_call(hwnd))
 			ON_CONTROL(CBN_SELCHANGE, IDC_CONVEN, format_call(hwnd))
 			ON_CONTROL(EN_CHANGE, IDC_CALLEDT, parse_edit(hwnd))
-			ON_CONTROL_RANGE(EN_CHANGE, IDC_EDIT1, IDC_EDIT14,
+			ON_CONTROL_RANGE(EN_CHANGE, IDC_EDIT1, IDC_EDIT22,
 				edt_update(hwnd, LOWORD(wParam)))
 			ON_CONTROL_RANGE(0, IDC_SPOIL_EAX, IDC_SPOIL_EBP, 
 				format_call(hwnd));

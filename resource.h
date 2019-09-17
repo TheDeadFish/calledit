@@ -3,7 +3,8 @@
 #endif
 
 #define IDD_DIALOG1                             100
-#define IDC_CALLEDT                             1000
+#define IDC_COMBO10                             1000
+#define IDC_CALLEDT                             1001
 #define IDC_COMBO1                              1004
 #define IDC_CONVEN                              1006
 #define IDC_COMBO2                              1009
@@ -12,6 +13,9 @@
 #define IDC_COMBO5                              1018
 #define IDC_COMBO6                              1021
 #define IDC_COMBO7                              1024
+#define IDC_COMBO8                              1025
+#define IDC_COMBO9                              1026
+#define IDC_COMBO11                             1028
 #define IDC_COPY                                1029
 #define IDC_PASTE                               1030
 #define IDC_SPOIL_EAX                           1033
@@ -35,5 +39,13 @@
 #define IDC_EDIT12                              1111
 #define IDC_EDIT13                              1112
 #define IDC_EDIT14                              1113
-#define IDC_SPOIL                               1114
-#define IDC_GENERATE                            1115
+#define IDC_EDIT15                              1114
+#define IDC_EDIT16                              1115
+#define IDC_EDIT17                              1116
+#define IDC_EDIT18                              1117
+#define IDC_EDIT19                              1118
+#define IDC_EDIT20                              1119
+#define IDC_EDIT21                              1120
+#define IDC_EDIT22                              1121
+#define IDC_SPOIL                               1122
+#define IDC_GENERATE                            1123
