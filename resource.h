@@ -20,7 +20,7 @@
 #define IDC_ARG1_LABL                           1124
 #define IDC_EDIT1                               2000
 #define IDC_EDIT2                               2001
-#define IDC_ARG1_NAME                           2002
-#define IDC_ARG1_TYPE                           2003
+#define IDC_ARG1_TYPE                           2002
+#define IDC_ARG1_NAME                           2003
 #define IDC_ARG2_TYPE                           2004
 #define IDC_COMBO2                              3000

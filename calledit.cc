@@ -74,7 +74,9 @@ char* kill_at(char* s)
 	
 	// split the string
 	pos = strrchr(s, ' ');
-	if(!pos) return pos; *pos = 0; 
+	if(!pos) return pos; 	
+	if(pos[1] == '*') { pos[0] = '*'; pos++; } 
+	*pos = 0;
 	return remove_space(pos+1);
 }
 
