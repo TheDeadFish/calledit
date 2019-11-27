@@ -4,7 +4,6 @@
 
 #define IDD_DIALOG1                             100
 #define IDC_CALLEDT                             1001
-#define IDC_COMBO1                              1004
 #define IDC_CONVEN                              1006
 #define IDC_COPY                                1029
 #define IDC_PASTE                               1030
@@ -23,4 +22,4 @@
 #define IDC_ARG1_TYPE                           2002
 #define IDC_ARG1_NAME                           2003
 #define IDC_ARG2_TYPE                           2004
-#define IDC_COMBO2                              3000
+#define IDC_BUTTON1                             3000

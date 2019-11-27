@@ -258,6 +258,10 @@ void mainDlgInit(HWND hwnd)
 	CREATESTRUCT arg1Text = MurderChild2(hwnd, IDC_ARG1_LABL);
 	CREATESTRUCT arg1Type = MurderChild2(hwnd, IDC_ARG1_TYPE);
 	CREATESTRUCT arg1Name = MurderChild2(hwnd, IDC_ARG1_NAME);
+	CREATESTRUCT arg1Btn = MurderChild2(hwnd, IDC_BUTTON1);
+	arg1Btn.lpszName = "X";
+	
+
 	int yDelta = MurderChild(hwnd, IDC_ARG2_TYPE).top-arg1Type.y;
 	ExpandWindow(hwnd, 0, yDelta*(MAX_ARG-2));
 	
@@ -272,7 +276,9 @@ void mainDlgInit(HWND hwnd)
 		CreateChildIndirect(&arg1Text); arg1Text.y += yDelta;
 		CreateChildIndirect(&arg1Type); arg1Type.y += yDelta;
 		CreateChildIndirect(&arg1Name); arg1Name.y += yDelta;
+		CreateChildIndirect(&arg1Btn); arg1Btn.y += yDelta;
 		PTRADD(arg1Type.hMenu, 2); PTRADD(arg1Name.hMenu, 2);
+		PTRADD(arg1Name.hMenu, 1);
 	}
 
 	dlgCombo_addStrs(hwnd, IDC_CONVEN, callName, 5);
@@ -289,8 +295,6 @@ void edt_update(HWND hwnd, int ctrlId)
 	
 	// update the argument
 	int index = ctrlId-IDC_EDIT1;
-	printf("%d\n", index);
-	
 	strcpy(ci.str(index), buff);
 	format_call(hwnd);
 }
@@ -376,6 +380,7 @@ void clipPaste(HWND hwnd)
 	xstr str = clipBoad_GetText();
 	collapse_whitespace(str);
 	SetDlgItemTextA(hwnd, IDC_CALLEDT, str);
+	clipCopy(hwnd);
 }
 
 void spoilChg(HWND hwnd)
@@ -383,6 +388,35 @@ void spoilChg(HWND hwnd)
 	EnableDlgItems2(hwnd, IDC_SPOIL_EAX, MAX_REG,
 		IsDlgButtonChecked(hwnd, IDC_SPOIL));
 	format_call(hwnd);
+}
+
+
+
+
+void arg_get(HWND hwnd, int index, char* type, char* name)
+{
+	GetDlgItemTextA(hwnd, edit_id(index, 0), type, 128);
+	GetDlgItemTextA(hwnd, edit_id(index, 1), name, 128);
+}
+
+void arg_set(HWND hwnd, int index, cch* type, cch* name)
+{
+	SetDlgItemTextA(hwnd, edit_id(index, 0), type);
+	SetDlgItemTextA(hwnd, edit_id(index, 1), name);
+}
+
+void arg_move(HWND hwnd, int dst, int src) 
+{
+	char type[128], name[128];
+	arg_get(hwnd, src, type, name);
+	arg_set(hwnd, dst, type, name);
+}
+
+void arg_delelte(HWND hwnd, int index)
+{
+	for(int i = index; i < MAX_ARG; i++) {
+		arg_move(hwnd, i+1, i+2); }
+	arg_set(hwnd, MAX_ARG, "","");
 }
 
 BOOL CALLBACK mainDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -401,6 +435,8 @@ BOOL CALLBACK mainDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				edt_update(hwnd, LOWORD(wParam)))
 			ON_CONTROL_RANGE(0, IDC_SPOIL_EAX, IDC_SPOIL_EBP, 
 				format_call(hwnd));
+			ON_COMMAND_RANGE(IDC_BUTTON1, IDC_BUTTON1+MAX_ARG, 
+				arg_delelte(hwnd, index))
 		,)
 	,)
 }
