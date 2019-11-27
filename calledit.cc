@@ -12,7 +12,7 @@ void dlgChk_setBits(HWND hwnd, int first, int count, u32 bits);
 
 
 
-#define MAX_ARG 10
+#define MAX_ARG 16
 #define MAX_REG 7
 #define SPOIL_MASK_STD 7
 #define SPOIL_MASM_WATC 1
@@ -201,8 +201,78 @@ void format_call(HWND hwnd)
 	SetDlgItemTextA(hwnd, IDC_CALLEDT, str.data);
 }
 
+HWND CreateWindowIndirect(LPCREATESTRUCT cs)
+{
+	return CreateWindowEx(cs->dwExStyle, cs->lpszClass, cs->lpszName, 
+		cs->style, cs->x, cs->y, cs->cx, cs->cy, cs->hwndParent,
+		cs->hMenu, cs->hInstance, cs->lpCreateParams);
+}
+
+void InheritFont(HWND hwnd)
+{
+	HFONT hFont = (HFONT)sendMessage(GetParent(hwnd), WM_GETFONT);
+	sendMessage(hwnd, WM_SETFONT, (WPARAM)hFont, TRUE);
+}
+
+HWND CreateChildIndirect(LPCREATESTRUCT cs)
+{
+	HWND hwnd = CreateWindowIndirect(cs);
+	InheritFont(hwnd); return hwnd;
+}
+
+CREATESTRUCT GetChildInfo(HWND hwnd)
+{
+	CREATESTRUCT cs;
+	cs.lpCreateParams = 0; cs.lpszName = 0; 
+	cs.hInstance = (HINSTANCE)GetWindowLongPtr(hwnd, GWL_HINSTANCE);
+	cs.hMenu = (HMENU)GetWindowLongPtr(hwnd, GWL_ID);
+	cs.hwndParent = GetParent(hwnd);
+	cs.style = GetWindowLongPtr(hwnd, GWL_STYLE);
+	cs.dwExStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+	cs.lpszClass = (LPCTSTR)GetClassLongW(hwnd, GCW_ATOM);
+ 	XYWH xywh = GetChildXywh(hwnd); cs.x = xywh.x; 
+	cs.y = xywh.y; cs.cx = xywh.w; cs.cy = xywh.h;
+	return cs;
+}
+
+CREATESTRUCT MurderChild2(HWND hwnd) {
+	CREATESTRUCT x = GetChildInfo(hwnd);
+	DestroyWindow(hwnd); return x; }
+CREATESTRUCT GetChildInfo(HWND hwnd, int ctrlId) {
+	return GetChildInfo(GetDlgItem(hwnd, ctrlId)); }
+CREATESTRUCT MurderChild2(HWND hwnd, int ctrlId) {
+	return MurderChild2(GetDlgItem(hwnd, ctrlId)); }
+	
+void ExpandWindow(HWND hwnd, int x, int y)
+{
+	RECT rc; GetWindowRect(hwnd, &rc);
+	rc.right += x; rc.bottom += y; 
+	MoveWindow(hwnd, RECT_XYWH(rc), TRUE);
+}
+
 void mainDlgInit(HWND hwnd)
 {
+	// get child window info
+	CREATESTRUCT arg1Text = MurderChild2(hwnd, IDC_ARG1_LABL);
+	CREATESTRUCT arg1Type = MurderChild2(hwnd, IDC_ARG1_TYPE);
+	CREATESTRUCT arg1Name = MurderChild2(hwnd, IDC_ARG1_NAME);
+	int yDelta = MurderChild(hwnd, IDC_ARG2_TYPE).top-arg1Type.y;
+	ExpandWindow(hwnd, 0, yDelta*(MAX_ARG-2));
+	
+	
+	// create child windows
+	char name[4];
+	arg1Text.hMenu = (HMENU)-1;
+	arg1Text.lpszName = name;
+	for(int i = 0; i < MAX_ARG; i++) {
+		sprintf(name, "A%d", i+1);
+		
+		CreateChildIndirect(&arg1Text); arg1Text.y += yDelta;
+		CreateChildIndirect(&arg1Type); arg1Type.y += yDelta;
+		CreateChildIndirect(&arg1Name); arg1Name.y += yDelta;
+		PTRADD(arg1Type.hMenu, 2); PTRADD(arg1Name.hMenu, 2);
+	}
+
 	dlgCombo_addStrs(hwnd, IDC_CONVEN, callName, 5);
 	dlgCombo_setSel(hwnd, IDC_CONVEN, 0);
 	format_call(hwnd);
@@ -217,6 +287,8 @@ void edt_update(HWND hwnd, int ctrlId)
 	
 	// update the argument
 	int index = ctrlId-IDC_EDIT1;
+	printf("%d\n", index);
+	
 	strcpy(ci.str(index), buff);
 	format_call(hwnd);
 }
@@ -240,7 +312,7 @@ void parse_edit(HWND hwnd)
 	in_edt_update = true;
 	SCOPE_EXIT(in_edt_update = false);
 	
-	for(int i = IDC_EDIT1; i <= IDC_EDIT22; i++) {
+	for(int i = IDC_EDIT1; i <= IDC_EDIT1+100; i++) {
 		SetDlgItemTextA(hwnd, i, ""); }
 	char buff[1024];
 	GetDlgItemTextA(hwnd, IDC_CALLEDT, buff, 1024);
@@ -323,7 +395,7 @@ BOOL CALLBACK mainDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			ON_COMMAND(IDC_GENERATE, format_call(hwnd))
 			ON_CONTROL(CBN_SELCHANGE, IDC_CONVEN, format_call(hwnd))
 			ON_CONTROL(EN_CHANGE, IDC_CALLEDT, parse_edit(hwnd))
-			ON_CONTROL_RANGE(EN_CHANGE, IDC_EDIT1, IDC_EDIT22,
+			ON_CONTROL_RANGE(EN_CHANGE, IDC_EDIT1, IDC_EDIT1+100,
 				edt_update(hwnd, LOWORD(wParam)))
 			ON_CONTROL_RANGE(0, IDC_SPOIL_EAX, IDC_SPOIL_EBP, 
 				format_call(hwnd));
