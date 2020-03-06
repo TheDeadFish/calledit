@@ -278,7 +278,7 @@ void mainDlgInit(HWND hwnd)
 		CreateChildIndirect(&arg1Name); arg1Name.y += yDelta;
 		CreateChildIndirect(&arg1Btn); arg1Btn.y += yDelta;
 		PTRADD(arg1Type.hMenu, 2); PTRADD(arg1Name.hMenu, 2);
-		PTRADD(arg1Name.hMenu, 1);
+		PTRADD(arg1Btn.hMenu, 1);
 	}
 
 	dlgCombo_addStrs(hwnd, IDC_CONVEN, callName, 5);
